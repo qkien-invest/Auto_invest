@@ -4,8 +4,10 @@ import argparse
 import json
 
 from auto_invest.analysis import StockValuationInput, compute_returns, valuation_summary
+from auto_invest.buffett_agent import BuffettAgentInput, BuffettStyleAgent
 from auto_invest.data_collector import MarketDataCollector
 from auto_invest.portfolio import portfolio_report
+from auto_invest.vnstock_data import VnStockDataCollector
 
 
 def _align_prices_to_common_dates(price_map: dict[str, list[tuple]]) -> dict[str, list[float]]:
@@ -84,6 +86,35 @@ def cmd_optimize(args: argparse.Namespace) -> None:
     print(json.dumps(report, indent=2))
 
 
+
+def cmd_buffett_agent(args: argparse.Namespace) -> None:
+    collector = VnStockDataCollector()
+    prices = collector.fetch_price_history(args.symbol, years=args.lookback_years)
+    latest_price = prices[-1][1]
+
+    if args.eps is not None and args.book_value_per_share is not None and args.roe is not None and args.debt_to_equity is not None:
+        fundamentals = {
+            "eps": args.eps,
+            "book_value_per_share": args.book_value_per_share,
+            "roe": args.roe,
+            "debt_to_equity": args.debt_to_equity,
+        }
+    else:
+        fundamentals = collector.fetch_fundamentals(args.symbol)
+
+    agent = BuffettStyleAgent()
+    result = agent.evaluate(
+        BuffettAgentInput(
+            symbol=args.symbol.upper(),
+            current_price=latest_price,
+            eps=fundamentals["eps"],
+            book_value_per_share=fundamentals["book_value_per_share"],
+            roe=fundamentals["roe"],
+            debt_to_equity=fundamentals["debt_to_equity"],
+        )
+    )
+    print(json.dumps(result, indent=2))
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Auto Invest Toolkit")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -110,6 +141,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_opt.add_argument("--market-symbol", default="^spx")
     p_opt.add_argument("--var-confidence", type=float, default=0.95)
     p_opt.set_defaults(func=cmd_optimize)
+
+    p_buffett = sub.add_parser("buffett", help="Buffett-style single-agent analysis with vnstock")
+    p_buffett.add_argument("--symbol", required=True, help="VN symbol, e.g. FPT")
+    p_buffett.add_argument("--lookback-years", type=int, default=3)
+    p_buffett.add_argument("--eps", type=float)
+    p_buffett.add_argument("--book-value-per-share", type=float)
+    p_buffett.add_argument("--roe", type=float)
+    p_buffett.add_argument("--debt-to-equity", type=float)
+    p_buffett.set_defaults(func=cmd_buffett_agent)
 
     return parser
 

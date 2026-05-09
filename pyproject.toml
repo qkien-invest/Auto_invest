@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "auto-invest"
-version = "0.2.0"
+version = "0.3.0"
 description = "Automation toolkit for stock data collection, valuation, and portfolio allocation"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = ["vnstock"]
 
 [project.optional-dependencies]
 dev = ["pytest"]
