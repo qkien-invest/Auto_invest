@@ -113,7 +113,32 @@ def cmd_buffett_agent(args: argparse.Namespace) -> None:
             debt_to_equity=fundamentals["debt_to_equity"],
         )
     )
-    print(json.dumps(result, indent=2))
+    
+    print("\n" + "="*50)
+    print(f" BUFFETT ANALYSIS: {result['symbol']} ".center(50, "="))
+    print("="*50)
+    print(f" Rating: {result['rating']}")
+    print(f" Score:  {result['score']}/{result['max_score']}")
+    print("-" * 50)
+    
+    print(" METRICS:")
+    for k, v in result['metrics'].items():
+        if isinstance(v, float):
+            print(f"   {k:<22} : {v:,.4f}")
+        else:
+            print(f"   {k:<22} : {v}")
+            
+    print("-" * 50)
+    print(" CHECKS:")
+    for k, v in result['checks'].items():
+        status = "[PASS]" if v else "[FAIL]"
+        print(f"   {k:<22} : {status}")
+        
+    print("-" * 50)
+    print(" NOTES:")
+    for note in result['notes']:
+        print(f" * {note}")
+    print("="*50 + "\n")
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Auto Invest Toolkit")
